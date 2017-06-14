@@ -24,7 +24,21 @@ local raidProfiles = {
             [9] = { "Великий магистр Элисанда", "элисанда", "магистр" },
             [10] = { "Гул'дан", "гулдан" },
         }
-    }
+    },
+    ["Гробница Саргераса"] = {
+        aliases = { "гс", "gs", "tos" },
+        bosses = {
+            [1] = { "Горот", "гор" },
+            [2] = { "Демоническая инквизиция", "инквизиция" },
+            [3] = { "Харджатан", "хаджатан", "хадж" },
+            [4] = { "Сестры Луны", "сестры" },
+            [5] = { "Госпожа Сашж'ин", "госпожа", "сашж", "саш" },
+            [6] = { "Сонм страданий", "сонм" },
+            [7] = { "Бдительная дева", "дева" },
+            [8] = { "Аватара Падшего", "аватара", "падший" },
+            [9] = { "Кил'джеден", "килджеден", "килджаден" },
+        }
+    },
 }
 
 local raidAliasToRaidName = {}
@@ -44,6 +58,7 @@ function module.main:ADDON_LOADED()
     -- TODO: Calculate defaults based on average rank
     VInTerroremRT.RaiderRank = VInTerroremRT.RaiderRank or 'Legioner'
     VInTerroremRT.ActiveRaiderRank = VInTerroremRT.ActiveRaiderRank or 'Option'
+    VInTerroremRT.SelectedRaid = VInTerroremRT.SelectedRaid or 'Гробница Саргераса'
 
     module:RegisterSlash()
     module:RegisterAddonMessage()
@@ -52,6 +67,7 @@ function module.main:ADDON_LOADED()
 
     module.db.raiderRank = 'Alt' -- VInTerroremRT.RaiderRank
     module.db.activeRaiderRank = VInTerroremRT.ActiveRaiderRank
+    module.db.selectedRaid = VInTerroremRT.SelectedRaid
 
     module:_LoadVariables()
 end
@@ -601,10 +617,15 @@ function module:ShowBossMembers(raidName, boss)
 end
 
 function module:ShowPlayerBosses(player)
-    local result = self:HandleBossesCommand(player, {"b", "цн"})
+    local result = self:HandleBossesCommand(player, {"b", "гс"})
     for _, msg in ipairs(result) do
         print(msg)
     end
+end
+
+function module:SelectRaid(raid)
+    module.db.selectedRaid = VInTerroremRT.SelectedRaid
+    VInTerroremRT.SelectedRaid = raid
 end
 
 function module:slash(argL, arg)
@@ -642,10 +663,13 @@ function module:slash(argL, arg)
             self:DemoteAll()
         elseif argL:find("boss ") ~= nil then
             local boss = arg:match("boss[ ]+(.+)")
-            self:ShowBossMembers("Цитадель ночи", boss)
+            self:ShowBossMembers(module.db.selectedRaid, boss)
         elseif argL:find("bosses ") ~= nil then
             local player = arg:match("bosses[ ]+(.+)")
             self:ShowPlayerBosses(player)
+        elseif argL:find("raid ") ~= nil then
+            local raid = arg:match("raid[ ]+(.+)")
+            self:SelectRaid(raid)
         else
             print("Unknown command: " .. argL)
         end
