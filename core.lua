@@ -3,6 +3,14 @@ local ExRT = _G.GExRT
 
 InTerroremRT.L = {} --> localization
 
+InTerroremRT.mod = {}
+InTerroremRT.Modules = {}
+function InTerroremRT.mod:New(moduleName, localizatedName, disableOptions, enableLoadInCombat)
+    local _self = ExRT.mod:New(moduleName, localizatedName, disableOptions, enableLoadInCombat)
+    table.insert(InTerroremRT.Modules, _self)
+    return _self
+end
+
 InTerroremRT.frame = CreateFrame("Frame")
 
 InTerroremRT.frame:SetScript("OnEvent", function(self, event, ...)
@@ -12,8 +20,10 @@ InTerroremRT.frame:SetScript("OnEvent", function(self, event, ...)
             return
         end
         _G.VInTerroremRT = _G.VInTerroremRT or {}
-        ExRT.A['RaidRoster'].main:ADDON_LOADED()
-        ExRT.A['RaidRoster']:Enable()
+        for _, module in ipairs(InTerroremRT.Modules) do
+            ExRT.A[module.name].main:ADDON_LOADED()
+            ExRT.A[module.name]:Enable()
+        end
     end
 end)
 

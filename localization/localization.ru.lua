@@ -7,8 +7,11 @@ end
 
 local L = InTerroremRT.L
 
-
+-- Raid Roster
 L.RaidRoster = 'Ростер'
 L.DefaultStaticName = 'Гильд статик'
 L.RaidRosterInviteAll = 'Пригласить всех'
 L.RaidRosterAddAll = 'Добавить группу/рейд'
+
+-- Boss List
+L.BossList = 'Список боссов'

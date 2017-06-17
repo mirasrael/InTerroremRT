@@ -9,3 +9,4 @@ core.lua
 localization\localization.ru.lua
 localization\localization.lua
 RaidRoster.lua
+BossList.lua
