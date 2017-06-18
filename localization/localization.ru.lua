@@ -16,3 +16,5 @@ L.RaidRosterAddAll = 'Добавить группу/рейд'
 -- Boss List
 L.BossList = 'Список боссов'
 L.Encounter = "Босс"
+L.RaidLeader = "Лидер рейда"
+L.SendToRaidLeader = "Отправить рейд лидеру"

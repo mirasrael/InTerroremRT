@@ -280,6 +280,7 @@ end
 function module:_LoadVariables()
     module.db.selectedRaid = VInTerroremRT.SelectedRaid
     module.db.bosses = VInTerroremRT.Bosses or {}
+    module.db.raidLeader = VInTerroremRT.RaidLeader or ''
     -- player selected bosess for each raid
     module.db.playerBosses = tsetdefault(VInTerroremRT, 'PlayerBosses', {})
 end
@@ -327,11 +328,11 @@ function module.options:_CreateScrollableTable(options, titleProvider, itemsProv
     borderList.ScrollBar:SetScript("OnValueChanged", options.ReloadPage)
     module:_CreateBossesTable(borderList)
 
-    options.borderList = borderList
     return borderList
 end
 
 function module.options:_CreateBossListPage()
+    -- boss table
     local titleProvider = function(items)
         return L.BossList
     end
@@ -343,8 +344,10 @@ function module.options:_CreateBossListPage()
         line.name:SetText(encounterName)
         line.encounterNeeded:SetChecked(module:_IsEncounterNeeded(module.db.selectedRaid, encounterName))
     end
-    module.options:_CreateScrollableTable(module.options, titleProvider, itemsProvider, itemRenderer):SetPoint("TOP", 0, -25)
+    self.borderList = module.options:_CreateScrollableTable(module.options, titleProvider, itemsProvider, itemRenderer)
+    self.borderList:SetPoint("TOP", 0, -25)
 
+    -- raid switcher
     local raidNames = keys(raidProfiles)
     self.selectedRaidDropDown = ELib:DropDown(self, 200, #raidNames):Point('TOPRIGHT', -5, 0):Size(200):SetText(module.db.selectedRaid)
     function self.selectedRaidDropDown:SetValue(raidName)
@@ -352,12 +355,24 @@ function module.options:_CreateBossListPage()
         module.options.selectedRaidDropDown:SetText(raidName)
         ELib:DropDownClose()
     end
+
     self.selectedRaidDropDown.List = map(raidNames, function(raidName)
         return {
             text = raidName,
             arg1 = raidName,
             func = self.selectedRaidDropDown.SetValue
         }
+    end)
+
+    -- send block
+    self.txtRaidLeaderName = ELib:Text(self, L.RaidLeader, 14):Point('TOPLEFT', self.borderList, 'BOTTOMLEFT', 0, -18)
+    self.edtRaidLeaderName = ELib:Edit(self):Point('TOPLEFT', self.txtRaidLeaderName, 'TOPRIGHT', 10, 3):Size(200, 20):Text(module.db.raidLeader):OnChange(function(self)
+        module:SetRaidLeader(self:GetText())
+    end)
+    self.btnSend = ELib:Button(self, L.SendToRaidLeader):Point('TOPRIGHT', self.borderList, 'BOTTOMRIGHT', 0, -15):Size(150, 22)
+    self.btnSend:Point('TOPLEFT', self.edtRaidLeaderName, 'TOPRIGHT', 10, 1)
+    self.btnSend:OnClick(function()
+        module:SendPlayerBosses()
     end)
 end
 
@@ -369,7 +384,7 @@ function module.options:Load()
     self:_CreateBossListPage()
 
     function module.options.showPage()
-        self.borderList:Invalidate()
+        module.options.borderList:Invalidate()
     end
 
     self.OnShow_disableNil = true
@@ -437,6 +452,21 @@ function module:ShowPlayerBosses(player)
     end
 end
 
+function module:SendPlayerBosses()
+    for instanceName, raidProfile in pairs(raidProfiles) do
+        local msg = 'itrt b ' .. raidProfile.aliases[1]
+        for no, encounterNames in ipairs(raidProfile.bosses) do
+            local encounterName = encounterNames[1]
+            if self:_IsEncounterNeeded(instanceName, encounterName) then
+                msg = msg .. ' ' .. no
+            else
+                msg = msg .. ' -' .. no
+            end
+        end
+        SendChatMessage(msg, "WHISPER", "Common", module.db.raidLeader)
+    end
+end
+
 function module:SelectRaid(raid)
     local resolvedRaidName = raidAliasToRaidName[raid]
     if resolvedRaidName == nil then
@@ -446,6 +476,11 @@ function module:SelectRaid(raid)
     module.db.selectedRaid = resolvedRaidName
     VInTerroremRT.SelectedRaid = module.db.selectedRaid
     self:ReloadUI()
+end
+
+function module:SetRaidLeader(raidLeaderName)
+    VInTerroremRT.RaidLeader = raidLeaderName
+    module.db.raidLeader = VInTerroremRT.RaidLeader
 end
 
 function module:slash(argL, arg)
