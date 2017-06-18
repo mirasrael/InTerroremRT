@@ -1,6 +1,6 @@
-## Interface: 70000w
+## Interface: 70200
 ## Title: InTerrorem Raid Tools
-## Author: mirasrael
+## Author: mirasrael (Тейваз <Ин Террорем> - Свежеватель Душ)
 ## Notes: InTerrorem Raid Tools (extension for Exorsus Raid Tools)
 ## SavedVariables: VInTerroremRT
 ## Version: 0.1.0
