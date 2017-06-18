@@ -284,44 +284,67 @@ function module:_LoadVariables()
     module.db.playerBosses = tsetdefault(VInTerroremRT, 'PlayerBosses', {})
 end
 
-function module.options:_CreateBossListPage()
-    self.borderList = CreateFrame("Frame", nil, self)
-    self.borderList:SetSize(648, module.db.perPage * 30)
-    self.borderList:SetPoint("TOP", 0, -50)
-    ELib:Border(self.borderList, 2, .24, .25, .30, 1)
+function module.options:_CreateScrollableTable(options, titleProvider, itemsProvider, itemRenderer)
+    local perPage = module.db.perPage
+    local borderList = CreateFrame("Frame", nil, self)
 
-    self.borderList:SetScript("OnMouseWheel", function(self, delta)
+    borderList:SetSize(648, perPage * 30)
+    borderList:SetPoint("TOP", 0, -50)
+    ELib:Border(borderList, 2, .24, .25, .30, 1)
+
+    borderList:SetScript("OnMouseWheel", function(self, delta)
         if delta > 0 then
-            module.options.ScrollBar.buttonUP:Click("LeftButton")
+            options.ScrollBar.buttonUP:Click("LeftButton")
         else
-            module.options.ScrollBar.buttonDown:Click("LeftButton")
+            options.ScrollBar.buttonDown:Click("LeftButton")
         end
     end)
 
-    self.ScrollBar = ELib:ScrollBar(self.borderList):Size(16, 0):Point("TOPRIGHT", -3, -3):Point("BOTTOMRIGHT", -3, 3):Range(1, 20)
+    borderList.ScrollBar = ELib:ScrollBar(borderList):Size(16, 0):Point("TOPRIGHT", -3, -3):Point("BOTTOMRIGHT", -3, 3):Range(1, 20)
 
-    function module.options.ReloadPage()
-        local selectRaifProfile = raidProfiles[module.db.selectedRaid]
-        local nowDb = selectRaifProfile.bosses
-        module.options.title:SetText(L.RaidRoster .. ' - ' .. module.db.selectedRaid .. ' (' .. #nowDb .. ')')
+    function options.ReloadPage()
+        local nowDb = itemsProvider()
+        options.title:SetText(titleProvider(nowDb))
 
-        local scrollNow = ExRT.F.Round(module.options.ScrollBar:GetValue())
-        local linesToShow = math.min(module.db.perPage, #nowDb - scrollNow + 1)
+        local scrollNow = ExRT.F.Round(borderList.ScrollBar:GetValue())
+        local linesToShow = math.min(perPage, #nowDb - scrollNow + 1)
         for i = scrollNow, scrollNow + linesToShow - 1 do
-            local line = module.options.lines[i - scrollNow + 1]
+            local line = options.lines[i - scrollNow + 1]
             local data = nowDb[i]
-            local encounterName = data[1]
-            line.name:SetText(encounterName)
-            line.encounterNeeded:SetChecked(module:_IsEncounterNeeded(module.db.selectedRaid, encounterName))
+            itemRenderer(line, data)
             line:Show()
         end
-        for i = linesToShow + 1, module.db.perPage do
-            module.options.lines[i]:Hide()
+        for i = linesToShow + 1, perPage do
+            options.lines[i]:Hide()
         end
     end
 
-    self.ScrollBar:SetScript("OnValueChanged", module.options.ReloadPage)
-    module:_CreateBossesTable(self.borderList)
+    borderList.ScrollBar:SetScript("OnValueChanged", options.ReloadPage)
+    module:_CreateBossesTable(borderList)
+
+    function borderList:Show()
+        local count = #itemsProvider()
+        borderList.ScrollBar:SetMinMaxValues(1, max(count - perPage + 1, 1)):UpdateButtons()
+        options.ReloadPage()
+    end
+
+    options.borderList = borderList
+    return borderList
+end
+
+function module.options:_CreateBossListPage()
+    local titleProvider = function(items)
+        return L.RaidRoster .. ' - ' .. module.db.selectedRaid .. ' (' .. #items .. ')'
+    end
+    local itemsProvider = function()
+        return raidProfiles[module.db.selectedRaid].bosses
+    end
+    local itemRenderer = function(line, data)
+        local encounterName = data[1]
+        line.name:SetText(encounterName)
+        line.encounterNeeded:SetChecked(module:_IsEncounterNeeded(module.db.selectedRaid, encounterName))
+    end
+    module.options:_CreateScrollableTable(module.options, titleProvider, itemsProvider, itemRenderer)
 end
 
 function module:addonMessage(sender, prefix, ...)
@@ -332,9 +355,7 @@ function module.options:Load()
     self:_CreateBossListPage()
 
     function module.options.showPage()
-        local count = #raidProfiles[module.db.selectedRaid].bosses
-        self.ScrollBar:SetMinMaxValues(1, max(count - module.db.perPage + 1, 1)):UpdateButtons()
-        module.options.ReloadPage()
+        self.borderList:Show()
     end
 
     self.OnShow_disableNil = true
