@@ -62,6 +62,15 @@ InTerroremRT.F.tindex = function(tbl, element)
     return nil
 end
 
+InTerroremRT.F.tsetdefault = function(tbl, element, defaultValue)
+    local value = tbl[element]
+    if value == nil then
+        value = defaultValue
+        tbl[element] = value
+    end
+    return value
+end
+
 InTerroremRT.F.tremoveElement = function(tbl, element)
     local idx = InTerroremRT.F.tindex(tbl, element)
     if idx ~= nil then

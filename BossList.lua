@@ -7,11 +7,13 @@
 --
 local GlobalAddonName, InTerroremRT = ...
 
+local tsetdefault = InTerroremRT.F.tsetdefault
+
 local VInTerroremRT
 local ExRT = _G.GExRT
 
-local module = InTerroremRT.mod:New("BossList", InTerroremRT.L.BossList, nil, true)
 local ELib, L = ExRT.lib, InTerroremRT.L
+local module = InTerroremRT.mod:New("BossList", L.BossList, nil, true)
 local raidProfiles = {
     ["Цитадель ночи"] = {
         aliases = { "цн", "nh" },
@@ -58,7 +60,7 @@ module.db.perPage = 18
 module.db.page = 1
 
 function module.main:ADDON_LOADED()
-    VInTerroremRT = _G.VInTerroremRT 
+    VInTerroremRT = _G.VInTerroremRT
     VInTerroremRT.SelectedRaid = VInTerroremRT.SelectedRaid or 'Гробница Саргераса'
 
     module:RegisterSlash()
@@ -249,7 +251,11 @@ function module:_CreateBossesTable(borderList)
         line:SetSize(625, 30)
         line:SetPoint("TOPLEFT", 0, -(i - 1) * 30)
 
-        line.name = ELib:Text(line, "Boss", 11):Color():Point(5, 0):Size(200, 30):Shadow()
+        line.name = ELib:Text(line, L.Encounter, 11):Color():Point(5, 0):Size(200, 30):Shadow()
+        line.encounterNeeded = ELib:Check(line, "", false):Point('TOPRIGHT', 0, -5):OnClick(function(self)
+            local encounterName = self:GetParent().name:GetText()
+            module:_SetEncounterNeeded(module.db.selectedRaid, encounterName, self:GetChecked())
+        end)
 
         line.back = line:CreateTexture(nil, "BACKGROUND", nil, -3)
         line.back:SetPoint("TOPLEFT", 0, 0)
@@ -259,9 +265,23 @@ function module:_CreateBossesTable(borderList)
     end
 end
 
+function module:_SetEncounterNeeded(instanceName, encounterName, needed)
+    local instanceConfig = tsetdefault(self.db.playerBosses, instanceName, {})
+    local encounterConfig = tsetdefault(instanceConfig, encounterName, {})
+    encounterConfig.needed = needed
+end
+
+function module:_IsEncounterNeeded(instanceName, encounterName)
+    local instanceConfig = self.db.playerBosses[instanceName]
+    local encounterConfig = instanceConfig and instanceConfig[encounterName]
+    return encounterConfig and encounterConfig.needed
+end
+
 function module:_LoadVariables()
     module.db.selectedRaid = VInTerroremRT.SelectedRaid
     module.db.bosses = VInTerroremRT.Bosses or {}
+    -- player selected bosess for each raid
+    module.db.playerBosses = tsetdefault(VInTerroremRT, 'PlayerBosses', {})
 end
 
 function module.options:_CreateBossListPage()
@@ -290,8 +310,9 @@ function module.options:_CreateBossListPage()
         for i = scrollNow, scrollNow + linesToShow - 1 do
             local line = module.options.lines[i - scrollNow + 1]
             local data = nowDb[i]
-            local name = data[1]
-            line.name:SetText(name)
+            local encounterName = data[1]
+            line.name:SetText(encounterName)
+            line.encounterNeeded:SetChecked(module:_IsEncounterNeeded(module.db.selectedRaid, encounterName))
             line:Show()
         end
         for i = linesToShow + 1, module.db.perPage do
@@ -377,7 +398,7 @@ function module:ShowBossMembers(raidName, boss)
 end
 
 function module:ShowPlayerBosses(player)
-    local result = self:HandleBossesCommand(player, {"b", "гс"})
+    local result = self:HandleBossesCommand(player, { "b", "гс" })
     for _, msg in ipairs(result) do
         print(msg)
     end

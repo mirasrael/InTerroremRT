@@ -15,3 +15,4 @@ L.RaidRosterAddAll = 'Добавить группу/рейд'
 
 -- Boss List
 L.BossList = 'Список боссов'
+L.Encounter = "Босс"
