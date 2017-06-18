@@ -251,11 +251,11 @@ function module:_CreateBossesTable(borderList)
         line:SetSize(625, 30)
         line:SetPoint("TOPLEFT", 0, -(i - 1) * 30)
 
-        line.name = ELib:Text(line, L.Encounter, 11):Color():Point(5, 0):Size(200, 30):Shadow()
-        line.encounterNeeded = ELib:Check(line, "", false):Point('TOPRIGHT', 0, -5):OnClick(function(self)
+        line.encounterNeeded = ELib:Check(line, "", false):Point('TOPLEFT', 10, -5):OnClick(function(self)
             local encounterName = self:GetParent().name:GetText()
             module:_SetEncounterNeeded(module.db.selectedRaid, encounterName, self:GetChecked())
         end)
+        line.name = ELib:Text(line, L.Encounter, 14):Color():Point('TOPLEFT', line.encounterNeeded, 'TOPRIGHT', 10, 4):Size(200, 30):Shadow()
 
         line.back = line:CreateTexture(nil, "BACKGROUND", nil, -3)
         line.back:SetPoint("TOPLEFT", 0, 0)
