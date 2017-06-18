@@ -7,7 +7,7 @@
 --
 local GlobalAddonName, InTerroremRT = ...
 
-local tsetdefault = InTerroremRT.F.tsetdefault
+local tsetdefault, map, keys = InTerroremRT.F.tsetdefault, InTerroremRT.F.map, InTerroremRT.F.keys
 
 local VInTerroremRT
 local ExRT = _G.GExRT
@@ -289,7 +289,6 @@ function module.options:_CreateScrollableTable(options, titleProvider, itemsProv
     local borderList = CreateFrame("Frame", nil, self)
 
     borderList:SetSize(648, perPage * 30)
-    borderList:SetPoint("TOP", 0, -50)
     ELib:Border(borderList, 2, .24, .25, .30, 1)
 
     borderList:SetScript("OnMouseWheel", function(self, delta)
@@ -301,6 +300,12 @@ function module.options:_CreateScrollableTable(options, titleProvider, itemsProv
     end)
 
     borderList.ScrollBar = ELib:ScrollBar(borderList):Size(16, 0):Point("TOPRIGHT", -3, -3):Point("BOTTOMRIGHT", -3, 3):Range(1, 20)
+
+    function borderList:Invalidate()
+        local count = #itemsProvider()
+        borderList.ScrollBar:SetMinMaxValues(1, max(count - perPage + 1, 1)):UpdateButtons()
+        options.ReloadPage()
+    end
 
     function options.ReloadPage()
         local nowDb = itemsProvider()
@@ -322,19 +327,13 @@ function module.options:_CreateScrollableTable(options, titleProvider, itemsProv
     borderList.ScrollBar:SetScript("OnValueChanged", options.ReloadPage)
     module:_CreateBossesTable(borderList)
 
-    function borderList:Show()
-        local count = #itemsProvider()
-        borderList.ScrollBar:SetMinMaxValues(1, max(count - perPage + 1, 1)):UpdateButtons()
-        options.ReloadPage()
-    end
-
     options.borderList = borderList
     return borderList
 end
 
 function module.options:_CreateBossListPage()
     local titleProvider = function(items)
-        return L.RaidRoster .. ' - ' .. module.db.selectedRaid .. ' (' .. #items .. ')'
+        return L.BossList
     end
     local itemsProvider = function()
         return raidProfiles[module.db.selectedRaid].bosses
@@ -344,7 +343,22 @@ function module.options:_CreateBossListPage()
         line.name:SetText(encounterName)
         line.encounterNeeded:SetChecked(module:_IsEncounterNeeded(module.db.selectedRaid, encounterName))
     end
-    module.options:_CreateScrollableTable(module.options, titleProvider, itemsProvider, itemRenderer)
+    module.options:_CreateScrollableTable(module.options, titleProvider, itemsProvider, itemRenderer):SetPoint("TOP", 0, -25)
+
+    local raidNames = keys(raidProfiles)
+    self.selectedRaidDropDown = ELib:DropDown(self, 200, #raidNames):Point('TOPRIGHT', -5, 0):Size(200):SetText(module.db.selectedRaid)
+    function self.selectedRaidDropDown:SetValue(raidName)
+        module:SelectRaid(raidName)
+        module.options.selectedRaidDropDown:SetText(raidName)
+        ELib:DropDownClose()
+    end
+    self.selectedRaidDropDown.List = map(raidNames, function(raidName)
+        return {
+            text = raidName,
+            arg1 = raidName,
+            func = self.selectedRaidDropDown.SetValue
+        }
+    end)
 end
 
 function module:addonMessage(sender, prefix, ...)
@@ -355,7 +369,7 @@ function module.options:Load()
     self:_CreateBossListPage()
 
     function module.options.showPage()
-        self.borderList:Show()
+        self.borderList:Invalidate()
     end
 
     self.OnShow_disableNil = true
@@ -364,10 +378,8 @@ function module.options:Load()
 end
 
 function module:ReloadUI()
-    if module.options.ReloadPage ~= nil then
-        local count = #raidProfiles[module.db.selectedRaid].bosses
-        module.options.ScrollBar:SetMinMaxValues(1, max(count - module.db.perPage + 1, 1)):UpdateButtons()
-        module.options.ReloadPage()
+    if module.options.borderList ~= nil then
+        module.options.borderList:Invalidate()
     end
 end
 

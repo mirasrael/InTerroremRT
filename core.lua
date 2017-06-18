@@ -123,7 +123,26 @@ InTerroremRT.F.buildMessageList = function(listName, lst, separator, handler, ma
             handler(str)
         end
     end
+end
 
+-- map(table, function)
+-- e.g: map({1,2,3}, double)    -> {2,4,6}
+function InTerroremRT.F.map(tbl, func)
+    local newtbl = {}
+    for i, v in pairs(tbl) do
+        newtbl[i] = func(v)
+    end
+    return newtbl
+end
+
+-- keys(table)
+-- e.g: keys({a = 1, b = 2})    -> {a, b}
+function InTerroremRT.F.keys(tbl)
+    local newtbl = {}
+    for k, _ in pairs(tbl) do
+        tinsert(newtbl, k)
+    end
+    return newtbl
 end
 
 InTerroremRT.frame:RegisterEvent("ADDON_LOADED")
