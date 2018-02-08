@@ -15,7 +15,7 @@ local ExRT = _G.GExRT
 local ELib, L = ExRT.lib, InTerroremRT.L
 local module = InTerroremRT.mod:New("BossList", L.BossList, nil, true)
 local raidProfiles = {
-    ["Цитадель ночи"] = {
+    ["Цитадель Ночи"] = {
         aliases = { "цн", "nh" },
         instanceId = 786,
         bosses = {
@@ -45,14 +45,57 @@ local raidProfiles = {
             [8] = { "Аватара Падшего", "аватара", "падший" },
             [9] = { "Кил'джеден", "килджеден", "килджаден" },
         }
-    },
+    }
 }
 
+local function collectBosses(instanceId)
+    local encounters = {}
+    local encounterIndex = 1
+    EJ_SelectInstance(instanceId)
+    while encounterIndex > 0 do
+        local name, description, encounterID = EJ_GetEncounterInfoByIndex(encounterIndex, instanceId)
+        if name == nil then
+            return encounters
+        end
+        encounters[encounterIndex] = { name }
+        encounterIndex = encounterIndex + 1
+    end
+    return encounters
+end
+
+local function collectInstances()
+    -- select last tier
+    EJ_SelectTier(EJ_GetNumTiers())
+    local instanceIndex = 1
+    local instanceId, name, description
+    while instanceIndex > 0 do
+        instanceId, name, description = EJ_GetInstanceByIndex(instanceIndex, true)
+        if instanceId == nil then
+            return
+        end
+        instanceIndex = instanceIndex + 1
+        if not raidProfiles[name] then
+            local alias = string.gsub(name, ' ', ''):gsub(',', '')
+            local raidProfile = {
+                aliases = { alias },
+                instanceId = instanceId,
+                bosses = collectBosses(instanceId)
+            }
+            raidProfiles[name] = raidProfile
+        end
+    end
+end
+
 local raidAliasToRaidName = {}
-for raidName, raidProfile in pairs(raidProfiles) do
-    raidAliasToRaidName[raidName] = raidName
-    for _, alias in ipairs(raidProfile.aliases) do
-        raidAliasToRaidName[alias] = raidName
+
+local function buildBossLists()
+    collectInstances()
+
+    for raidName, raidProfile in pairs(raidProfiles) do
+        raidAliasToRaidName[raidName] = raidName
+        for _, alias in ipairs(raidProfile.aliases) do
+            raidAliasToRaidName[alias] = raidName
+        end
     end
 end
 
@@ -69,6 +112,8 @@ function module.main:ADDON_LOADED()
     module.db.realmName = GetRealmName():gsub(' ', '')
 
     module:_LoadVariables()
+
+    buildBossLists()
 end
 
 local function filterOutITRTMessage(self, event, msg, author)
@@ -112,7 +157,7 @@ function module:HandleBossesCommand(name, args)
     end
     if #args == 1 then
         return { "Укажите рейд и список боссов через пробел (- чтобы убрать). Например: itrt b цн +1 -2 ботаник -крос" }
-    end
+    end 
     local raidName = raidAliasToRaidName[args[2]]
     local raidProfile = raidProfiles[raidName]
     if raidProfile == nil then
@@ -372,7 +417,7 @@ function module.options:_CreateBossListPage()
     self.btnSend = ELib:Button(self, L.SendToRaidLeader):Point('TOPRIGHT', self.borderList, 'BOTTOMRIGHT', 0, -15):Size(150, 22)
     self.btnSend:Point('TOPLEFT', self.edtRaidLeaderName, 'TOPRIGHT', 10, 1)
     self.btnSend:OnClick(function()
-        module:SendPlayerBosses()
+        module:SendPlayerBosses(module.db.selectedRaid)
     end)
 end
 
@@ -452,18 +497,20 @@ function module:ShowPlayerBosses(player)
     end
 end
 
-function module:SendPlayerBosses()
+function module:SendPlayerBosses(targetIstanceName)
     for instanceName, raidProfile in pairs(raidProfiles) do
-        local msg = 'itrt b ' .. raidProfile.aliases[1]
-        for no, encounterNames in ipairs(raidProfile.bosses) do
-            local encounterName = encounterNames[1]
-            if self:_IsEncounterNeeded(instanceName, encounterName) then
-                msg = msg .. ' ' .. no
-            else
-                msg = msg .. ' -' .. no
+        if not targetIstanceName or instanceName == targetIstanceName then
+            local msg = 'itrt b ' .. raidProfile.aliases[1]
+            for no, encounterNames in ipairs(raidProfile.bosses) do
+                local encounterName = encounterNames[1]
+                if self:_IsEncounterNeeded(instanceName, encounterName) then
+                    msg = msg .. ' ' .. no
+                else
+                    msg = msg .. ' -' .. no
+                end
             end
+            SendChatMessage(msg, "WHISPER", "Common", module.db.raidLeader)
         end
-        SendChatMessage(msg, "WHISPER", "Common", module.db.raidLeader)
     end
 end
 

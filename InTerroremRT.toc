@@ -1,9 +1,9 @@
-## Interface: 70200
+## Interface: 70300
 ## Title: InTerrorem Raid Tools
 ## Author: mirasrael (Тейваз <Ин Террорем> - Свежеватель Душ)
 ## Notes: InTerrorem Raid Tools (extension for Exorsus Raid Tools)
 ## SavedVariables: VInTerroremRT
-## Version: 0.1.0
+## Version: 0.2.0
 ## Dependencies: ExRT
 core.lua
 localization\localization.ru.lua
