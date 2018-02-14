@@ -3,7 +3,7 @@
 ## Author: mirasrael (Тейваз <Ин Террорем> - Свежеватель Душ)
 ## Notes: InTerrorem Raid Tools (extension for Exorsus Raid Tools)
 ## SavedVariables: VInTerroremRT
-## Version: 0.2.0
+## Version: 0.2.1
 ## Dependencies: ExRT
 core.lua
 localization\localization.ru.lua

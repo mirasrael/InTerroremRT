@@ -112,8 +112,6 @@ function module.main:ADDON_LOADED()
     module.db.realmName = GetRealmName():gsub(' ', '')
 
     module:_LoadVariables()
-
-    buildBossLists()
 end
 
 local function filterOutITRTMessage(self, event, msg, author)
@@ -425,6 +423,8 @@ function module:addonMessage(sender, prefix, ...)
 end
 
 function module.options:Load()
+    buildBossLists()
+
     self:CreateTilte()
     self:_CreateBossListPage()
 
