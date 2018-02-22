@@ -14,8 +14,9 @@ local ExRT = _G.GExRT
 
 local ELib, L = ExRT.lib, InTerroremRT.L
 local module = InTerroremRT.mod:New("BossList", L.BossList, nil, true)
-local raidProfiles = {
-    ["Цитадель Ночи"] = {
+local raidProfiles = {}
+if ExRT.locale == "ruRU" then
+    raidProfiles["Цитадель Ночи"] = {
         aliases = { "цн", "nh" },
         instanceId = 786,
         bosses = {
@@ -30,8 +31,8 @@ local raidProfiles = {
             [9] = { "Великий магистр Элисанда", "элисанда", "магистр" },
             [10] = { "Гул'дан", "гулдан" },
         }
-    },
-    ["Гробница Саргераса"] = {
+    }
+    raidProfiles["Гробница Саргераса"] = {
         aliases = { "гс", "gs", "tos" },
         instanceId = 875,
         bosses = {
@@ -46,7 +47,7 @@ local raidProfiles = {
             [9] = { "Кил'джеден", "килджеден", "килджаден" },
         }
     }
-}
+end
 
 local function collectBosses(instanceId)
     local encounters = {}
@@ -104,13 +105,13 @@ module.db.page = 1
 
 function module.main:ADDON_LOADED()
     VInTerroremRT = _G.VInTerroremRT
-    VInTerroremRT.SelectedRaid = VInTerroremRT.SelectedRaid or 'Гробница Саргераса'
 
     module:RegisterSlash()
     module:RegisterAddonMessage()
 
     module.db.realmName = GetRealmName():gsub(' ', '')
 
+    buildBossLists()
     module:_LoadVariables()
 end
 
@@ -321,6 +322,10 @@ function module:_IsEncounterNeeded(instanceName, encounterName)
 end
 
 function module:_LoadVariables()
+    if not (VInTerroremRT.SelectedRaid and raidProfiles[VInTerroremRT.SelectedRaid]) then
+        VInTerroremRT.SelectedRaid = pairs(raidProfiles)(raidProfiles)
+        print(VInTerroremRT.SelectedRaid)
+    end
     module.db.selectedRaid = VInTerroremRT.SelectedRaid
     module.db.bosses = VInTerroremRT.Bosses or {}
     module.db.raidLeader = VInTerroremRT.RaidLeader or ''
@@ -423,8 +428,6 @@ function module:addonMessage(sender, prefix, ...)
 end
 
 function module.options:Load()
-    buildBossLists()
-
     self:CreateTilte()
     self:_CreateBossListPage()
 
