@@ -79,10 +79,22 @@ local function collectInstances()
             local alias = string.gsub(name, ' ', ''):gsub(',', '')
             local raidProfile = {
                 aliases = { alias },
-                instanceId = instanceId,
-                bosses = collectBosses(instanceId)
+                instanceId = instanceId
             }
             raidProfiles[name] = raidProfile
+        end
+    end
+end
+
+local bossesLoaded = false
+
+local function ensureBosses()
+    if not bossesLoaded then
+        bossesLoaded = true
+        for name, raidProfile in pairs(raidProfiles) do
+            if not raidProfile.bosses then
+                raidProfile.bosses = collectBosses(raidProfile.instanceId)
+            end
         end
     end
 end
@@ -150,13 +162,14 @@ function module:GetBossMapping(raidName)
 end
 
 function module:HandleBossesCommand(name, args)
+    ensureBosses()
     local raidNames = {}
     for raidName, raidProfile in pairs(raidProfiles) do
         table.insert(raidNames, raidProfile.aliases[1] .. ' - ' .. raidName)
     end
     if #args == 1 then
         return { "Укажите рейд и список боссов через пробел (- чтобы убрать). Например: itrt b цн +1 -2 ботаник -крос" }
-    end 
+    end
     local raidName = raidAliasToRaidName[args[2]]
     local raidProfile = raidProfiles[raidName]
     if raidProfile == nil then
@@ -380,6 +393,7 @@ function module.options:_CreateScrollableTable(options, titleProvider, itemsProv
 end
 
 function module.options:_CreateBossListPage()
+    ensureBosses()
     -- boss table
     local titleProvider = function(items)
         return L.BossList
